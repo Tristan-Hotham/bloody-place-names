@@ -1,0 +1,104 @@
+<div class="stats">
+  <div><b>{{n_matched_features|int}}</b><span>grim place names on the OS map, from Battle to Hangman's Wood</span></div>
+  <div><b class="h">{{n_near2|int}}</b><span>of them lie within 2 km of a recorded battle or siege</span></div>
+  <div><b class="h">{{terms.battle.ratio_within_2|f1}}×</b><span>more "Battle" names within 2 km of a battle than matched names</span></div>
+  <div><b>{{share_far_10|pct0}}</b><span>are more than 10 km from any recorded battle</span></div>
+</div>
+
+<p class="lede">Drive through Britain and the map starts to sound like a crime scene. There is a town called Battle. There are Bloody Meadows, a Bloody Moss, a Murder Cleugh, dozens of Dead Man's this and that, and more than three hundred names built on Gallows or Gallow. In the Cotswolds you can visit Upper and Lower Slaughter. It is tempting to read every one of them as a memory of blood spilled on that spot.</p>
+<p>Some of them clearly are. Battle in East Sussex is named after the Battle of Hastings. But place names are slippery, and a word that looks violent today may once have meant something else entirely. So I asked a simple question of the whole map: do these names sit closer to real recorded battles than ordinary names do?</p>
+<p>I took every feature in the Ordnance Survey's open gazetteer of Great Britain whose name contains one of twelve grim words, {{n_matched_features|int}} names in all, and measured how far each lies from the nearest of {{battles.n_main|int}} battles and sieges with a location in Wikidata. Then I compared them with ordinary names of the same kind (hills with hills, woods with woods) in the same part of the country, drawn at random {{n_sim|int}} times over.</p>
+<p>The short answer: "Battle" names really do cluster at battlefields, about {{terms.battle.ratio_within_2|f1}} times more often than chance. "Bloody" names show a weaker pull. Gallows names sit near battles partly because both sit near towns. And for most of the other words, including Kill, Dead Man, Murder and Slaughter, I found nothing that luck does not explain.</p>
+
+<h2><span class="n">01 · The map</span>Every grim name, and every recorded battle</h2>
+<p>Each dot is a named place on the OS map, coloured by the word it contains. The crossed swords are battles and sieges up to 1900 with a point location in Wikidata. Turn words on and off with the buttons, and tap any mark for details. The list beside the map shows the names that sit closest to a recorded battle.</p>
+<div class="figure bleed">
+  <div class="controls">
+    <button class="btn" id="ball">All words</button>
+    <button class="btn" id="bviol">Words of fighting</button>
+    <button class="btn" id="bexe">Words of execution</button>
+    <button class="btn" id="bnone">Clear</button>
+    <button class="btn" id="bbat" aria-pressed="true">Battles</button>
+  </div>
+  <div class="chips" id="chips" role="group" aria-label="Show or hide each word"></div>
+  <div class="mapgrid">
+    <div>
+      <div id="map" role="application" aria-label="Map of {{n_matched_features|int}} grim place names and {{battles.n_main|int}} recorded battles in Great Britain"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="side">
+      <div class="fig-h" id="toph">Closest to a recorded battle</div>
+      <ol class="toplist" id="toplist"></ol>
+    </div>
+  </div>
+  <div class="src">Names: OS Open Names (Contains OS data © Crown copyright and database right 2026, OGL v3). Battles and sieges: Wikidata (CC0), points as given there. A match means only that the name contains the word: it says nothing about what the name means.</div>
+</div>
+
+<h2><span class="n">02 · The fair test</span>Why not just count names near battles?</h2>
+<p>Because almost everything is near something. Battles were fought along roads, at river crossings and around towns and castles, which is where people lived and where the map is most crowded with names. A Gallows Hill outside a county town will often be within a few miles of a siege of that town, whatever the name means.</p>
+<p>So each grim name gets its own set of stand-ins: {{n_sim|int}} ordinary OS names of exactly the same type (a hill for a hill, a wood for a wood, a hamlet for a hamlet) from the same 50 km square of the National Grid. These matched names have the same geography and the same mix of features, but nothing grim in their names. If the grim names sit closer to battles than their stand-ins, the closeness is about the names, not about where Britain's places happen to be.</p>
+<p>Across all OS names, the typical feature is {{all_features_median_km|f1}} km from the nearest recorded battle, and {{all_features_within_2|pct1}} lie within 2 km of one. That is the bar to beat.</p>
+<div class="figure">
+  <div class="controls"><div class="seg" role="group" aria-label="Distance"><button class="btn" data-cut="1" aria-pressed="false">1 km</button><button class="btn" data-cut="2" aria-pressed="true">2 km</button><button class="btn" data-cut="5" aria-pressed="false">5 km</button><button class="btn" data-cut="10" aria-pressed="false">10 km</button></div></div>
+  <div class="fig-h">How many names sit close to a recorded battle?</div>
+  <div class="fig-sub">Dots: share of each word's names within the chosen distance of a recorded battle or siege. Grey bar: 95% range for the matched ordinary names; black tick: their average. A dot to the right of its bar is closer than chance.</div>
+  <div class="chart" id="dotchart"></div>
+</div>
+
+<h2><span class="n">03 · Battle</span>The names that keep their word</h2>
+<p>The word Battle passes the test easily. Of the {{terms.battle.n|int}} OS names containing it, {{terms.battle.n_within_2|int}} lie within 2 km of a recorded battle or siege, where the matched names would give about {{terms.battle.exp_within_2|f1}}. Within 5 km it is {{terms.battle.obs_within_5|pct0}} against {{terms.battle.base_within_5|pct0}}. That holds whichever way I cut the battle list: battles only, before 1700, only those dated 1066 to 1746, and with names matched for distance to the nearest town.</p>
+<p>The closest are exactly the places you would hope for. Battle Moor in Northumberland is {{terms.battle.closest.0.km|f1}} km from the Wikidata point for the Battle of Grindon. There are suburbs called Battlefield both in Glasgow, by the Battle of Langside, and outside Shrewsbury, where the 1403 battle was fought. Battleton Holt is {{terms.battle.closest.6.km|f1}} km from the point for Edgehill. And the town of Battle is {{terms.battle.closest.3.km|f1}} km from the point for the Battle of Hastings.</p>
+<div class="pull">Even so, most Battle names are not at a recorded battle. {{terms.battle.n|int}} names, {{terms.battle.n_within_2|int}} within 2 km.</div>
+<p>The rest, from Battlesbridge in Essex to Battledown in Cheltenham, are many kilometres from any battle I can place. Some may remember fights that never made the record; some will have nothing to do with fighting at all. I make no claim about what any of them means.</p>
+
+<h2><span class="n">04 · Word by word</span>How close, term by term</h2>
+<p>Each small chart shows, for one word, the share of its names that lie within a given distance of a recorded battle (the coloured line), against the matched ordinary names (dashed line, with a grey band for the range you would expect by chance). Where the coloured line climbs above the band at the left, the names are closer to battles than luck would put them.</p>
+<div class="figure bleed">
+  <div class="grid3" id="minis"></div>
+  <div class="src">Cumulative share within 0 to 40 km. Band: 5th to 95th percentile of {{n_sim|int}} matched draws. The thin vertical line marks 5 km.</div>
+</div>
+<p>Three patterns stand out.</p>
+<p><b>Bloody</b> names show a modest pull. {{terms.blood.n_within_2|int}} of the {{terms.blood.n|int}} lie within 2 km of a recorded battle, against about {{terms.blood.exp_within_2|f1}} expected, and two of them are famous: the Bloody Meadow at Tewkesbury, {{terms.blood.closest.0.km|f1}} km from the point for the 1471 battle, and the Bloody Meadow at Towton. But most Bloody names are far from any battle on record, and {{terms.blood.country.Scotland|int}} of the {{terms.blood.n|int}} are in Scotland, many of them mosses and moorland in Dumfries and Galloway. With twelve words tested, a result this size could be luck (more in section 07).</p>
+<p><b>Gallows</b> is by far the commonest word, with {{terms.gallows.n|int}} names, {{terms.gallows.types.Hill Or Mountain|int}} of them hills and {{terms.gallows.country.Scotland|int}} of them in Scotland. They also sit nearer battles than their stand-ins: {{terms.gallows.n_within_2|int}} within 2 km against about {{terms.gallows.exp_within_2|f1}} expected. But much of that disappears when I also match on distance to the nearest town. Gallows names seem to share a neighbourhood with towns, and towns were besieged; the link runs through the town more than through the name.</p>
+<p><b>The rest</b> show no clear signal at 2 km. Kill, Dead Man, Murder, Hangman, Gibbet, Soldier, War and Red Bank names are no closer to recorded battles than ordinary names of the same kind in the same region, once you allow for chance. More than half the Kill names ({{terms.kill.country.Scotland|int}} of {{terms.kill.n|int}}) are in Scotland, and many are surely not about killing at all: a string of letters is not a meaning.</p>
+
+<h2><span class="n">05 · The Slaughter trap</span>Not every slaughter is a slaughter</h2>
+<p>The most famous red herring on the map is in the Cotswolds. Upper and Lower Slaughter look like the scene of a massacre. They are not, at least according to their Wikipedia articles:</p>
+<blockquote class="q">"The name of the village derives from the Old English word "slohtre" meaning "wet land"."<cite>Upper Slaughter, Wikipedia, <a href="https://en.wikipedia.org/wiki/Upper_Slaughter">en.wikipedia.org/wiki/Upper_Slaughter</a></cite></blockquote>
+<blockquote class="q">"The name of the village is derived from the Old English term "slough" meaning "wet land"."<cite>Lower Slaughter, Wikipedia, <a href="https://en.wikipedia.org/wiki/Lower_Slaughter">en.wikipedia.org/wiki/Lower_Slaughter</a></cite></blockquote>
+<p>And here is the twist. Both villages are only about {{slaughters.0.km|f1}} km from the Wikidata point for the Battle of Stow-on-the-Wold, fought in {{slaughters.0.year|raw}}. A naive "names near battles" count would chalk them up as a hit. That is exactly why the test needs a baseline, and why I make no claim about what any other name means.</p>
+<p>The same caution runs the other way. Warcop in Cumbria starts with "War", but Wikipedia says "The name Warcop means 'hill with a cairn'". My War search uses whole words only, so Warcop and every Warren and Warwick are left out. On the other side, Wikipedia is explicit that Battle "contains the site of, and is named after, the Battle of Hastings", and that Battlefield in Shropshire is roughly where "the Battle of Shrewsbury of 1403 took place".</p>
+<p>The Slaughter names as a group show nothing at 2 km: {{terms.slaughter.n_within_2|int}} of {{terms.slaughter.n|int}}. The Cotswold cluster lifts their 5 km share to {{terms.slaughter.obs_within_5|pct0}}, against {{terms.slaughter.base_within_5|pct0}} for matched names, which shows how a single famous corner can tilt a small group.</p>
+
+<h2><span class="n">06 · Where name and battle meet</span>The {{n_near2|int}} names within 2 km</h2>
+<p>Turn the question round and look at the battles. {{battles_with_name_2km|int}} of the {{battles.n_main|int}} recorded battles and sieges have at least one grim name within 2 km. Put the matched ordinary names in their place and the figure would be about {{battles_with_name_2km_base|f1}} (95% range {{battles_with_name_2km_base_lo|int}} to {{battles_with_name_2km_base_hi|int}}). So roughly half of those close encounters are what you would expect by chance alone, and the other half are a real signal.</p>
+<p>Some of the matches are circular: the battle took its name from the place, not the other way round. Killiecrankie is the clearest case. In {{n_near2_named_after|int}} of the {{n_near2|int}} cases, the place name appears in the battle's own name.</p>
+<div class="figure">
+  <div class="fig-h">Grim names within 2 km of a recorded battle or siege</div>
+  <div class="fig-sub">Distance from the OS point for the name to the Wikidata point for the battle. Neither point marks an exact spot.</div>
+  <div class="tablewrap"><table class="t"><thead><tr><th>Name</th><th>Nearest recorded battle</th><th class="num">Distance</th></tr></thead><tbody id="near2"></tbody></table></div>
+</div>
+
+<h2><span class="n">07 · Methods and caveats</span>How I did this, and what it cannot show</h2>
+<h3>Names</h3>
+<p>The names come from OS Open Names, the Ordnance Survey's open gazetteer of Great Britain. I used the {{n_os_features|int}} named natural and settlement features (hills, valleys, woods, water, coast, villages, hamlets, suburbs, towns), leaving out roads and postcodes. I searched each name, and its Welsh or Gaelic alternative where there is one, for twelve words, using case-insensitive patterns: battle, blood, slaughter, red bank, dead man, murder, kill (at the start of a word), war (as a whole word, leaving out names with "memorial", "man of war" and similar), soldier, gallow, gibbet and hangman. A name can match more than one word. The patterns and their tests are in the code.</p>
+<p>OS Open Names does not hold field names or most minor names, which is where many local "Bloody Field" and "Red Bank" traditions live. So this is a test of the names on the open national map, not of every name in use.</p>
+<h3>Battles</h3>
+<p>Battles and sieges come from Wikidata, from an extract of every battle, siege, naval battle and military campaign with a coordinate. I kept land battles and sieges on or within 2 km of the land of Great Britain and dated up to 1900, giving {{battles.n_main|int}} ({{battles.n_battle|int}} battles and {{battles.n_siege|int}} sieges); {{battles.n_pre1066|int}} are before 1066 and {{battles.n_undated|int}} have no date. Wikidata is uneven: some battles have no coordinate, some have the coordinate of a nearby town, and some sites are themselves disputed by historians. I excluded {{battles.n_flagged|words}} battle whose point is plainly wrong (the First Battle of St Albans, placed in Essex). As a check, for the {{battles.namecheck_n|int}} battles named "Battle of" a place that the OS also lists, the median distance from the Wikidata point to the nearest OS place of that name is {{battles.namecheck_median_km|f1}} km; {{battles.namecheck_far_n|int}} are more than {{battles.namecheck_km|int}} km away, mostly because the name is shared by another place. Leaving those out changes nothing that matters.</p>
+<p>Wikidata's coverage also differs by country: by the nearest OS feature, {{battles.by_country.England|int}} of the battles are in England, {{battles.by_country.Scotland|int}} in Scotland and {{battles.by_country.Wales|int}} in Wales.</p>
+<h3>The test</h3>
+<p>For each grim name I drew {{n_sim|int}} random OS names of the same local type in the same 50 km grid square (falling back to the 100 km square, then the whole country, when fewer than {{min_pool|int}} were available). For each set I measured the share within 1, 2, 5 and 10 km of a recorded battle and the median distance. The chance of a result is the share of the {{n_sim|int}} matched sets that did at least as well as the real names. A stricter version also matches on distance to the nearest OS town or city (bands at 2, 5 and 10 km).</p>
+<p>With twelve words, one or two will look striking by luck. Of the twelve, {{n_terms_p05_within2|words}} beat the baseline at 2 km with less than a 5% chance of luck; with a strict correction for twelve tests ({{bonferroni_alpha|raw}}), {{n_terms_bonf_within2|words}} still do: Battle and Gallows. Gallows does not survive the town-matched version at that strict level.</p>
+<div class="figure">
+  <div class="fig-h">All twelve words at a glance</div>
+  <div class="fig-sub">Within 2 km: observed count against the count expected from matched names. Chance: share of {{n_sim|int}} matched sets at least as close.</div>
+  <div class="tablewrap"><table class="t" id="termtab"><thead><tr><th>Word</th><th class="num">Names</th><th class="num">Within 2 km</th><th class="num">Expected</th><th class="num">Within 5 km</th><th class="num">Baseline</th><th class="num">Chance (2 km)</th></tr></thead><tbody></tbody></table></div>
+</div>
+<h3>What this cannot show</h3>
+<p>Distance is not meaning. A name near a battle may have nothing to do with it (the Slaughters), and a name far from any recorded battle may remember a fight that never reached the record, or an execution, a murder, a shipwreck or a pool of red water. I have not tried to trace the history of any single name; for that, the county volumes of the English Place-Name Society and their Scottish and Welsh counterparts are the place to start. All I can say is how the names, as a group, sit on the map.</p>
+
+<div class="note">
+  <h3>Related studies</h3>
+  <p>Place-name words on the OS map also feature in <a href="https://tristan-hotham.github.io/dale-down-fell-beck/">Dale, Down, Fell or Beck</a>, and old sites tested against matched ground in <a href="https://tristan-hotham.github.io/within-sight/">Within Sight</a>. More on the <a href="https://blog.tristanhotham.com/">blog</a>.</p>
+</div>
+<div class="cta"><a class="p" href="https://doi.org/10.5281/zenodo.23677165">Read the paper</a><a href="https://github.com/Tristan-Hotham/bloody-place-names">Data and code</a><a href="https://blog.tristanhotham.com/2026/10/27/bloody-place-names/">Blog post</a></div>

@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bloody Place Names</title>
+<meta name="description" content="Britain's map is full of Battle, Bloody, Slaughter, Dead Man and Gallows names. Do they sit near real recorded battles? {{n_matched_features|int}} names tested against a fair baseline.">
+<meta property="og:title" content="Bloody Place Names: do Britain's battle names mark real battles?">
+<meta property="og:description" content="{{n_matched_features|int}} grim place names on the Ordnance Survey map, measured against {{battles.n_main|int}} recorded battles and sieges, and against matched ordinary names.">
+<meta property="og:image" content="https://tristan-hotham.github.io/bloody-place-names/header.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800;9..144,900&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* Bone paper and dried blood. Red = the names. Ink = recorded battles. Grey band = the matched baseline. */
+:root{
+  --bg:#F4EFE6; --panel:#EBE3D5; --fg:#1E1A17; --muted:#6C6259; --rule:#DCD2C2; --card:#FBF8F2; --border:#CBBFAD;
+  --hot:#A4161A; --hot2:#D9481F; --ink:#2A2522; --band:#BDB3A4; --gold:#9C6B00; --sea:#E1E4E0;
+  --display:"Fraunces",Georgia,"Times New Roman",serif;
+  --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#161312; --panel:#211C1A; --fg:#EFE7DC; --muted:#A99D90; --rule:#38302C; --card:#1E1917; --border:#4A403A;
+  --hot:#E2483F; --hot2:#F2763E; --ink:#EFE7DC; --band:#5A504A; --gold:#D6A136; --sea:#121516; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#161312; --panel:#211C1A; --fg:#EFE7DC; --muted:#A99D90; --rule:#38302C; --card:#1E1917; --border:#4A403A;
+  --hot:#E2483F; --hot2:#F2763E; --ink:#EFE7DC; --band:#5A504A; --gold:#D6A136; --sea:#121516; color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 18px/1.62 var(--body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow-x:hidden}
+.wrap{max-width:680px;margin:0 auto;padding-block:28px 64px}
+.wrap .bleed{width:min(1080px,calc(100vw - 32px));margin-left:calc((100% - min(1080px,100vw - 32px))/2);margin-right:0}
+a{color:inherit;text-decoration-color:var(--hot);text-underline-offset:3px}
+.kicker{font:500 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.kicker b{background:var(--hot);color:#fff;padding:5px 8px;font-weight:500}
+header.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 24px;align-items:end;border-bottom:6px double var(--fg);padding-bottom:22px;margin-top:18px}
+h1{font:900 clamp(52px,13vw,112px)/.86 var(--display);letter-spacing:-.02em;margin:0;text-wrap:balance;font-variation-settings:"SOFT" 50}
+h1 em{font-style:normal;color:var(--hot);display:block}
+.mark{width:clamp(88px,20vw,170px);height:auto;display:block}
+.dek{grid-column:1/-1;font-size:21px;line-height:1.42;margin:8px 0 0;max-width:44ch}
+.byline{font:400 13px/1.4 var(--mono);color:var(--muted);margin-top:14px}
+h2{font:800 34px/1.04 var(--display);letter-spacing:-.01em;margin:52px 0 10px;text-wrap:balance}
+h2 .n{font:500 13px/1 var(--mono);color:var(--hot);display:block;letter-spacing:.1em;margin-bottom:10px}
+h3{font:600 20px/1.25 var(--display);margin:28px 0 6px}
+p{margin:0 0 16px}
+.lede::first-letter{font:900 72px/.8 var(--display);float:left;margin:6px 10px 0 0;color:var(--hot)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin:26px 0 8px}
+.stats div{background:var(--card);padding:14px 12px}
+.stats b{display:block;font:900 clamp(28px,6vw,40px)/1 var(--display);color:var(--fg)}
+.stats b.h{color:var(--hot)}
+.stats span{font:400 12px/1.35 var(--mono);color:var(--muted);display:block;margin-top:6px}
+@media (max-width:600px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.figure{margin:26px 0 30px}
+.fig-h{font:600 19px/1.25 var(--display);margin:0 0 4px}
+.fig-sub{font:400 13px/1.45 var(--mono);color:var(--muted);margin:0 0 12px}
+.src{font:400 12px/1.45 var(--mono);color:var(--muted);margin-top:10px}
+.chart{width:100%;position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-family:var(--mono);fill:var(--fg)}
+.lab{font-size:12px}.lab.m{fill:var(--muted)}.lab.b{font-weight:500}.lab.s{font-size:11px}.lab.h{fill:var(--hot);font-weight:500}
+.tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);font:400 12px/1.45 var(--mono);padding:8px 10px;border-radius:3px;max-width:270px;z-index:1000;transform:translate(-50%,calc(-100% - 12px));display:none}
+.tip b{font-weight:500}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+.btn{font:500 12px/1 var(--mono);background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:3px;padding:8px 10px;cursor:pointer;min-height:36px}
+.btn[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.btn:focus-visible,input:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:3px;overflow:hidden}
+.seg .btn{border:0;border-radius:0;border-right:1px solid var(--border)}
+.seg .btn:last-child{border-right:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.chip{font:500 12px/1 var(--mono);background:var(--card);color:var(--fg);border:1px solid var(--border);border-radius:20px;padding:7px 10px 7px 8px;cursor:pointer;min-height:34px;display:inline-flex;align-items:center;gap:6px}
+.chip i{width:11px;height:11px;border-radius:50%;display:inline-block;flex:none}
+.chip[aria-pressed="false"]{opacity:.42}
+.chip[aria-pressed="false"] i{background:transparent!important;border:1.5px solid var(--muted)}
+.chip small{color:var(--muted);font-weight:400}
+.mapgrid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:820px){.mapgrid{grid-template-columns:1fr}}
+#map{height:clamp(440px,76vh,680px);border:1px solid var(--border);background:var(--sea);border-radius:2px;z-index:0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font:400 12px/1.3 var(--mono);color:var(--muted);margin-top:8px;align-items:center}
+.legend svg{vertical-align:-4px;margin-right:4px}
+.side{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--hot);padding:12px 14px;font:400 13px/1.5 var(--mono)}
+.card b{font:600 18px/1.2 var(--display);display:block;margin-bottom:6px}
+.toplist{list-style:none;margin:0;padding:0;font:400 12.5px/1.3 var(--mono);max-height:420px;overflow:auto;border:1px solid var(--rule);background:var(--card)}
+.toplist li{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:8px;padding:7px 10px;border-bottom:1px solid var(--rule);cursor:pointer;align-items:center}
+.toplist li:hover,.toplist li:focus-visible{background:var(--panel);outline:none}
+.toplist i{width:10px;height:10px;border-radius:50%;display:block}
+.toplist .v{color:var(--hot);font-weight:500}
+.toplist .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toplist .nm small{display:block;color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis}
+.pull{font:600 26px/1.25 var(--display);border-left:6px solid var(--hot);padding:4px 0 4px 18px;margin:30px 0}
+.note{background:var(--panel);border:1px solid var(--rule);padding:14px 16px;font-size:16px;margin:22px 0}
+.note h3{margin-top:0}
+blockquote.q{margin:14px 0;padding:10px 14px;border-left:3px solid var(--hot);background:var(--card);font-size:16px}
+blockquote.q cite{display:block;font:400 12px/1.4 var(--mono);color:var(--muted);margin-top:6px;font-style:normal}
+table.t{width:100%;border-collapse:collapse;font:400 13px/1.35 var(--mono)}
+table.t th{text-align:left;font-weight:500;color:var(--muted);border-bottom:2px solid var(--fg);padding:6px 8px 6px 0}
+table.t td{border-bottom:1px solid var(--rule);padding:7px 8px 7px 0;vertical-align:top}
+table.t td.num,table.t th.num{text-align:right;white-space:nowrap}
+.tablewrap{overflow-x:auto;max-height:520px;overflow-y:auto}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 16px}
+@media (max-width:760px){.grid3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.mini h4{font:600 15px/1.2 var(--display);margin:0 0 2px;display:flex;gap:6px;align-items:center}
+.mini h4 i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.mini p{font:400 11.5px/1.35 var(--mono);color:var(--muted);margin:0 0 4px}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0}
+.cta a{font:500 13px/1 var(--mono);text-decoration:none;border:1px solid var(--fg);padding:11px 14px;border-radius:3px}
+.cta a.p{background:var(--hot);border-color:var(--hot);color:#fff}
+footer{border-top:6px double var(--fg);margin-top:56px;padding-top:16px;font:400 13px/1.55 var(--mono);color:var(--muted)}
+footer p{margin:0 0 10px}
+.theme{position:fixed;right:12px;bottom:12px;z-index:1001}
+.swords{color:var(--ink)}
+.leaflet-container{font:400 12px/1.4 var(--mono);background:var(--sea)}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--card);color:var(--fg);border-radius:3px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.leaflet-popup-content{margin:10px 12px;font:400 12.5px/1.45 var(--mono)}
+.leaflet-popup-content b{font:600 15px/1.2 var(--display);display:block;margin-bottom:4px}
+.leaflet-container a.leaflet-popup-close-button{color:var(--muted)}
+.leaflet-control-attribution{background:color-mix(in srgb,var(--card) 85%,transparent)!important;color:var(--muted)!important;font-size:10px}
+.leaflet-control-attribution a{color:var(--fg)!important}
+.leaflet-popup-content a{color:var(--hot)}
+.leaflet-bar a{background:var(--card);color:var(--fg);border-bottom-color:var(--border)}
+.leaflet-bar a:hover{background:var(--panel)}
+.leaflet-bar{border:1px solid var(--border)!important}
+.sw-icon svg{display:block;opacity:.8;filter:drop-shadow(0 0 1.5px var(--bg))}
+@media print{.theme,.controls,.chips{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="kicker"><b>Data study</b><span>History × place names</span><span>Great Britain</span></div>
+<header class="hero">
+  <h1>Bloody <em>place names</em></h1>
+  <svg class="mark" viewBox="-100 -100 200 200" aria-hidden="true"><g id="heroMark"></g></svg>
+  <p class="dek">Britain's map is scattered with Battle, Bloody Meadow, Slaughter, Dead Man's Hill and Gallows Hill. Do these names mark the sites of real fights, or are most of them red herrings? I measured {{n_matched_features|int}} of them against every recorded battle and siege I could place.</p>
+</header>
+<div class="byline">Dr Tristan Hotham, Independent researcher · October 2026 · Data: OS Open Names, Wikidata</div>
+
+<!--PROSE-->
+
+<footer>
+  <p>Dr Tristan Hotham, researcher on social media, campaigns and politics. Independent researcher. ORCID <a href="https://orcid.org/0000-0003-4931-9349">0000-0003-4931-9349</a>.</p>
+  <p>Cite as: Hotham, T. (2026) <i>Bloody Place Names: do Britain's battle names mark real battles?</i> Data study. <a href="https://doi.org/10.5281/zenodo.23677165">https://doi.org/10.5281/zenodo.23677165</a></p>
+  <p>Place names: Contains OS data © Crown copyright and database right 2026, <a href="https://www.ordnancesurvey.co.uk/products/os-open-names">OS Open Names</a>, Open Government Licence v3.0. Land outline for the static maps: county boundaries from the Office for National Statistics, OGL v3.0. Battles and sieges: <a href="https://www.wikidata.org/">Wikidata</a>, CC0. Quotations about the names Slaughter, Warcop, Battle and Battlefield are from the English Wikipedia articles linked in section 05 (CC BY-SA 4.0). Base map tiles © Esri, HERE, Garmin, © OpenStreetMap contributors, and the GIS user community. Map library: Leaflet.</p>
+  <p>The derived data and text on this page are released under CC BY 4.0. Code is MIT.</p>
+  <p>I wrote the text, with drafting and editing assistance from Claude (Anthropic), which also helped prepare the analysis code. I reviewed and checked all text and results.</p>
+  <p><a href="https://blog.tristanhotham.com/">More history data posts on the blog</a> · <a href="https://github.com/Tristan-Hotham/bloody-place-names">Data and code on GitHub</a></p>
+</footer>
+</div>
+<div class="tip" id="tip"></div>
+<button class="btn theme" id="theme" aria-label="Toggle dark mode">◐</button>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/*DATA*/
+const NS = "http://www.w3.org/2000/svg";
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const el = (t, a = {}, p) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; };
+const pc = (x, d = 0) => (x * 100).toFixed(d) + "%";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const tip = document.getElementById("tip");
+function showTip(h, x, y) { tip.innerHTML = h; tip.style.display = "block"; const w = tip.offsetWidth; x = Math.max(w / 2 + 8, Math.min(innerWidth - w / 2 - 8, x)); tip.style.left = x + scrollX + "px"; tip.style.top = y + scrollY + "px"; }
+function hideTip() { tip.style.display = "none"; }
+function hover(node, h) { node.style.cursor = "pointer"; node.setAttribute("tabindex", "0"); const s = () => { const r = node.getBoundingClientRect(); showTip(h, r.left + r.width / 2, r.top); }; node.addEventListener("pointerenter", s); node.addEventListener("focus", s); node.addEventListener("pointerleave", hideTip); node.addEventListener("blur", hideTip); node.addEventListener("click", e => { e.stopPropagation(); s(); }); }
+document.addEventListener("click", hideTip);
+const redraws = [];
+function resp(box, render) { let last = 0; const go = (force) => { const w = Math.max(240, Math.round(box.clientWidth)); if (!force && Math.abs(w - last) < 4) return; last = w; box.innerHTML = ""; render(w, w < 560); }; new ResizeObserver(() => go()).observe(box); redraws.push(() => go(true)); go(); }
+const lbl = (svg, x, y, s, cls = "lab", anchor = "start") => { const t = el("text", { x, y, class: cls, "text-anchor": anchor }, svg); t.textContent = s; return t; };
+const isDark = () => { const r = document.documentElement; return r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; };
+document.getElementById("theme").onclick = () => { const r = document.documentElement; r.dataset.theme = isDark() ? "light" : "dark"; redraws.forEach(f => f()); window.__restyle && window.__restyle(); };
+
+/* term colours: warm reds for words of fighting, cool inks for words of execution */
+const PAL_L = { battle: "#A4161A", blood: "#E0301E", slaughter: "#7D1538", redbank: "#E8743B", deadman: "#6B4226", murder: "#C2185B", kill: "#D99100", war: "#6E7F1F", soldier: "#2F6E8E", gallows: "#3B3950", gibbet: "#7A5BA6", hangman: "#3F7F55" };
+const PAL_D = { battle: "#F0524A", blood: "#FF7A5C", slaughter: "#E0628C", redbank: "#F5A06B", deadman: "#C79A6E", murder: "#F06BA3", kill: "#F2C14E", war: "#B5C75A", soldier: "#6FB3D6", gallows: "#B9B6D3", gibbet: "#B79CE0", hangman: "#7FC796" };
+const col = k => (isDark() ? PAL_D : PAL_L)[k];
+const TERMS = D.terms.map(t => ({ key: t[0], label: t[1], group: t[2] }));
+const TL = Object.fromEntries(TERMS.map(t => [t.key, t.label]));
+const R = D.R;
+const swordsSVG = (s, c) => `<svg width="${s}" height="${s}" viewBox="-12 -12 24 24"><g stroke="${c}" stroke-width="2.4" stroke-linecap="round"><line x1="-8" y1="-8" x2="8" y2="8"/><line x1="8" y1="-8" x2="-8" y2="8"/></g><g stroke="${c}" stroke-width="2" stroke-linecap="round"><line x1="-7.5" y1="2.5" x2="-2.5" y2="7.5"/><line x1="7.5" y1="2.5" x2="2.5" y2="7.5"/></g></svg>`;
+
+/* hero mark: crossed swords over a red place-name dot with ripples */
+(() => { const g = document.getElementById("heroMark");
+  for (let i = 0; i < 4; i++) el("circle", { cx: 0, cy: 12, r: 26 + i * 18, fill: "none", stroke: "var(--hot)", "stroke-width": 2.2 - i * .4, opacity: .7 - i * .15 }, g);
+  el("circle", { cx: 0, cy: 12, r: 16, fill: "var(--hot)" }, g);
+  const sword = (rot) => { const s = el("g", { transform: `rotate(${rot})` }, g);
+    el("path", { d: "M-4 -92 L4 -92 L4 44 L0 54 L-4 44 Z", fill: "var(--fg)" }, s);
+    el("rect", { x: -18, y: 44, width: 36, height: 7, rx: 2, fill: "var(--fg)" }, s);
+    el("rect", { x: -3.5, y: 51, width: 7, height: 26, fill: "var(--fg)" }, s);
+    el("circle", { cx: 0, cy: 82, r: 6, fill: "var(--fg)" }, s); };
+  sword(38); sword(-38);
+})();
+
+/* ===== data ===== */
+const P = D.pts.map((r, i) => ({ i, lat: r[0], lon: r[1], term: TERMS[r[2]].key, name: r[3], type: r[4], area: r[5], battle: r[6], km: r[7] }));
+const B = D.battles.map(r => ({ lat: r[0], lon: r[1], name: r[2], year: r[3], kind: r[4], wiki: r[5] }));
+const counts = {}; P.forEach(p => counts[p.term] = (counts[p.term] || 0) + 1);
+
+/* ===== map ===== */
+(() => {
+  const on = new Set(TERMS.map(t => t.key));
+  const chips = document.getElementById("chips");
+  const mk = (t) => { const b = document.createElement("button"); b.className = "chip"; b.setAttribute("aria-pressed", "true"); b.dataset.k = t.key;
+    b.innerHTML = `<i></i>${esc(t.label)} <small>${counts[t.key] || 0}</small>`; chips.appendChild(b); return b; };
+  const chipEls = TERMS.map(mk);
+  const paintChips = () => chipEls.forEach(b => { b.querySelector("i").style.background = col(b.dataset.k); b.setAttribute("aria-pressed", on.has(b.dataset.k)); });
+  paintChips();
+  if (!window.L) { document.getElementById("map").innerHTML = '<p style="padding:16px;font:400 13px/1.5 var(--mono)">The map library did not load. The charts below still work.</p>'; return; }
+  const map = L.map("map", { preferCanvas: true, scrollWheelZoom: false, zoomSnap: .25, minZoom: 4, maxZoom: 15 }).fitBounds([[49.9, -7.6], [58.7, 1.9]]);
+  map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
+  map.on("focus", () => map.scrollWheelZoom.enable()); map.on("blur", () => map.scrollWheelZoom.disable());
+  const tileUrl = () => `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/${isDark() ? "World_Dark_Gray_Base" : "World_Light_Gray_Base"}/MapServer/tile/{z}/{y}/{x}`;
+  const tiles = L.tileLayer(tileUrl(), { maxZoom: 15, attribution: 'Tiles &copy; Esri · Names: OS Open Names (OGL v3) · Battles: Wikidata (CC0)' }).addTo(map);
+  map.createPane("bat"); map.getPane("bat").style.zIndex = 640;
+  const dotR = L.canvas({ padding: .3, tolerance: 6 });
+  const popP = p => `<b>${esc(p.name)}</b>${esc(p.type)}, ${esc(p.area)}<br>Term: ${esc(TL[p.term])}<br>Nearest recorded battle or siege: ${esc(p.battle)}, <span style="color:var(--hot)">${p.km.toFixed(1)} km</span>`;
+  const marks = P.map(p => { const m = L.circleMarker([p.lat, p.lon], { renderer: dotR, radius: 4.2, weight: .8, fillOpacity: .9 }); m.bindPopup(() => popP(p)); m.addTo(map); return m; });
+  const style = () => { const bg = css("--bg"); P.forEach((p, i) => { const v = on.has(p.term); marks[i].setStyle({ fillColor: col(p.term), color: bg, fillOpacity: v ? .9 : 0, opacity: v ? 1 : 0 }); if (v) marks[i].bringToFront(); }); };
+  let batLayer = L.layerGroup().addTo(map), showBat = true;
+  const drawBat = () => { batLayer.clearLayers(); if (!showBat) return; const c = css("--ink");
+    const icon = L.divIcon({ className: "sw-icon", html: swordsSVG(11, c), iconSize: [11, 11], iconAnchor: [5.5, 5.5] });
+    B.forEach(b => L.marker([b.lat, b.lon], { icon, pane: "bat", keyboard: false, title: b.name }).bindPopup(`<b>${esc(b.name)}</b>${b.year ? (b.year < 1000 ? "AD " : "") + b.year : "date not given"} · ${esc(b.kind)}${b.wiki ? `<br><a href="${esc(b.wiki)}" target="_blank" rel="noopener">Wikipedia article</a>` : ""}<br><span style="color:var(--muted)">Point from Wikidata</span>`).addTo(batLayer)); };
+  style(); drawBat();
+  document.getElementById("legend").innerHTML = `<span>${swordsSVG(14, css("--ink"))}Recorded battle or siege (${B.length})</span><span>Dots: place names, coloured by term. Tap any mark for details.</span>`;
+  const list = document.getElementById("toplist");
+  const drawList = () => { list.innerHTML = ""; const rows = P.filter(p => on.has(p.term)).sort((a, b) => a.km - b.km).slice(0, 60);
+    document.getElementById("toph").textContent = `Closest to a recorded battle (${P.filter(p => on.has(p.term)).length} names shown)`;
+    rows.forEach(p => { const li = document.createElement("li"); li.tabIndex = 0;
+      li.innerHTML = `<i style="background:${col(p.term)}"></i><span class="nm">${esc(p.name)}<small>${esc(p.battle)}</small></span><span class="v">${p.km.toFixed(1)} km</span>`;
+      const go = () => { map.flyTo([p.lat, p.lon], 12, { duration: .8 }); setTimeout(() => marks[p.i].openPopup(), 850); document.getElementById("map").scrollIntoView({ behavior: "smooth", block: "center" }); };
+      li.onclick = go; li.onkeydown = e => { if (e.key === "Enter") go(); }; list.appendChild(li); }); };
+  drawList();
+  chipEls.forEach(b => b.onclick = () => { const k = b.dataset.k; on.has(k) ? on.delete(k) : on.add(k); paintChips(); style(); drawList(); });
+  document.getElementById("ball").onclick = () => { TERMS.forEach(t => on.add(t.key)); paintChips(); style(); drawList(); };
+  document.getElementById("bnone").onclick = () => { on.clear(); paintChips(); style(); drawList(); };
+  document.getElementById("bviol").onclick = () => { on.clear(); TERMS.filter(t => t.group === "violence").forEach(t => on.add(t.key)); paintChips(); style(); drawList(); };
+  document.getElementById("bexe").onclick = () => { on.clear(); TERMS.filter(t => t.group === "execution").forEach(t => on.add(t.key)); paintChips(); style(); drawList(); };
+  const bb = document.getElementById("bbat"); bb.onclick = () => { showBat = !showBat; bb.setAttribute("aria-pressed", showBat); drawBat(); };
+  window.__restyle = () => { tiles.setUrl(tileUrl()); paintChips(); style(); drawBat(); drawList();
+    document.getElementById("legend").querySelector("svg").outerHTML = swordsSVG(14, css("--ink")); };
+})();
+
+/* ===== chart: share within X km, observed vs baseline, per term ===== */
+(() => {
+  const box = document.getElementById("dotchart"); let cut = 2;
+  const keys = [...TERMS.map(t => t.key), "all_violence", "violence_no_kill", "all_execution"];
+  document.querySelectorAll("[data-cut]").forEach(b => b.onclick = () => { cut = +b.dataset.cut; document.querySelectorAll("[data-cut]").forEach(x => x.setAttribute("aria-pressed", x === b)); redraw(); });
+  let redraw;
+  resp(box, (W, small) => {
+    redraw = () => { box.innerHTML = ""; draw(Math.max(240, box.clientWidth), box.clientWidth < 560); };
+    draw(W, small);
+  });
+  function draw(W, small) {
+    const rows = keys.map(k => ({ k, r: R[k] })).sort((a, b) => (a.k.startsWith("all_") || a.k.startsWith("violence_")) - (b.k.startsWith("all_") || b.k.startsWith("violence_")) || b.r[`obs_within_${cut}`] / Math.max(.001, b.r[`base_within_${cut}`]) - a.r[`obs_within_${cut}`] / Math.max(.001, a.r[`base_within_${cut}`]));
+    const L0 = small ? 128 : 186, rh = 30, top = 26, gap = 14, H = top + rows.length * rh + gap + 34;
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `Share of names within ${cut} km of a recorded battle, observed against matched baseline` }, box);
+    const mx = Math.max(...rows.map(o => Math.max(o.r[`obs_within_${cut}`], o.r[`base_within_${cut}_hi`]))) * 1.08;
+    const x = v => L0 + (W - L0 - 40) * v / mx;
+    for (let t = 0; t <= mx; t += (mx > .5 ? .1 : .05)) { el("line", { x1: x(t), x2: x(t), y1: top - 6, y2: H - 30, stroke: "var(--rule)" }, svg); lbl(svg, x(t), H - 12, pc(t), "lab s m", "middle"); }
+    lbl(svg, L0, 12, small ? `share within ${cut} km` : `share of names within ${cut} km of a recorded battle or siege`, "lab s m");
+    rows.forEach((o, i) => { const y = top + i * rh + rh / 2 + (i >= 12 ? gap : 0) - (i >= 12 ? 0 : 0);
+      const yy = y + (i >= 12 ? 0 : 0); const r = o.r;
+      if (i === 12) el("line", { x1: 0, x2: W, y1: yy - rh / 2 - 2, y2: yy - rh / 2 - 2, stroke: "var(--fg)", "stroke-width": 1 }, svg);
+      const c = TL[o.k] ? col(o.k) : "var(--hot)";
+      const name = TL[o.k] || r.label; lbl(svg, L0 - 10, yy + 4, (small ? name.replace("All violence words", "All fighting").replace("Violence words without Kill", "Fighting, no Kill").replace("All execution words", "All execution") : name.replace("All violence words", "All fighting words").replace("Violence words without Kill", "Fighting words, no Kill")), "lab" + (TL[o.k] ? "" : " b"), "end");
+      el("rect", { x: x(r[`base_within_${cut}_lo`]), y: yy - 6, width: Math.max(2, x(r[`base_within_${cut}_hi`]) - x(r[`base_within_${cut}_lo`])), height: 12, fill: "var(--band)", opacity: .75, rx: 2 }, svg);
+      el("line", { x1: x(r[`base_within_${cut}`]), x2: x(r[`base_within_${cut}`]), y1: yy - 8, y2: yy + 8, stroke: "var(--fg)", "stroke-width": 1.6 }, svg);
+      el("line", { x1: x(r[`base_within_${cut}`]), x2: x(r[`obs_within_${cut}`]), y1: yy, y2: yy, stroke: c, "stroke-width": 1.4, opacity: .7 }, svg);
+      const dot = el("circle", { cx: x(r[`obs_within_${cut}`]), cy: yy, r: 6.5, fill: c, stroke: "var(--bg)", "stroke-width": 1.5 }, svg);
+      const pv = r[`p_within_${cut}`];
+      hover(dot, `<b>${esc(name)}</b> (${r.n} names)<br>Within ${cut} km: ${pc(r[`obs_within_${cut}`], 1)}<br>Matched baseline: ${pc(r[`base_within_${cut}`], 1)} (95% range ${pc(r[`base_within_${cut}_lo`], 1)} to ${pc(r[`base_within_${cut}_hi`], 1)})<br>Chance of a value this high by luck: ${pv < .001 ? "under 0.1%" : pc(pv, 1)}`);
+      if (!small) lbl(svg, W - 2, yy + 4, `n=${r.n}`, "lab s m", "end");
+    });
+    const lg = el("g", { transform: `translate(${L0},${H - 2})` }, svg);
+  }
+})();
+
+/* ===== small multiples: cumulative share within d km ===== */
+(() => {
+  const host = document.getElementById("minis");
+  const keys = [...TERMS.map(t => t.key)];
+  keys.forEach(k => { const r = R[k]; const d = document.createElement("div"); d.className = "mini";
+    d.innerHTML = `<h4><i style="background:${col(k)}"></i>${esc(TL[k])}</h4><p>${r.n} names · median ${r.obs_median.toFixed(1)} km (baseline ${r.base_median.toFixed(1)})</p><div class="chart"></div>`;
+    host.appendChild(d);
+    resp(d.querySelector(".chart"), (W) => {
+      const H = Math.round(W * .66), l = 34, b = 20, t = 6, rr = 6; const c = r.curve; const n = c.obs.length;
+      const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `${TL[k]}: share of names within each distance of a recorded battle, against the matched baseline` }, d.querySelector(".chart"));
+      const X = i => l + (W - l - rr) * i / (n - 1), Y = v => t + (H - t - b) * (1 - v);
+      [0, .5, 1].forEach(v => { el("line", { x1: l, x2: W - rr, y1: Y(v), y2: Y(v), stroke: "var(--rule)" }, svg); lbl(svg, l - 4, Y(v) + 4, pc(v), "lab s m", "end"); });
+      [0, 10, 20, 30, 40].forEach(v => lbl(svg, X(v), H - 4, v + (v === 40 ? " km" : ""), "lab s m", v === 40 ? "end" : "middle"));
+      let ar = ""; for (let i = 0; i < n; i++) ar += (i ? "L" : "M") + X(i) + " " + Y(c.hi[i]); for (let i = n - 1; i >= 0; i--) ar += "L" + X(i) + " " + Y(c.lo[i]);
+      el("path", { d: ar + "Z", fill: "var(--band)", opacity: .7 }, svg);
+      el("path", { d: c.base.map((v, i) => (i ? "L" : "M") + X(i) + " " + Y(v)).join(""), fill: "none", stroke: "var(--fg)", "stroke-width": 1.2, "stroke-dasharray": "3 3" }, svg);
+      el("path", { d: c.obs.map((v, i) => (i ? "L" : "M") + X(i) + " " + Y(v)).join(""), fill: "none", stroke: col(k), "stroke-width": 2.4 }, svg);
+      el("line", { x1: X(5), x2: X(5), y1: t, y2: H - b, stroke: "var(--muted)", "stroke-width": .8, opacity: .6 }, svg);
+      const hit = el("rect", { x: l, y: t, width: W - l - rr, height: H - t - b, fill: "transparent" }, svg);
+      hover(hit, `<b>${esc(TL[k])}</b><br>Within 5 km: ${pc(c.obs[5], 0)} of names, against ${pc(c.base[5], 0)} for matched names<br>Within 10 km: ${pc(c.obs[10], 0)} against ${pc(c.base[10], 0)}`);
+    });
+  });
+})();
+
+/* ===== table of names within 2 km ===== */
+(() => {
+  const tb = document.getElementById("near2");
+  D.near2.forEach(r => { const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${esc(r.name)}<br><span style="color:var(--muted)">${esc(r.type)}, ${esc(r.area)}</span></td><td>${esc(r.battle)}${r.year ? ", " + r.year : ""}</td><td class="num">${r.km.toFixed(1)} km</td>`; tb.appendChild(tr); });
+  const tt = document.querySelector("#termtab tbody");
+  [...TERMS.map(t => t.key), "all_violence", "all_execution"].forEach(k => { const r = R[k]; const tr = document.createElement("tr");
+    const pv = r.p_within_2; const name = TL[k] || r.label;
+    tr.innerHTML = `<td>${TL[k] ? `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${col(k)};margin-right:6px"></span>` : ""}${esc(name)}</td><td class="num">${r.n}</td><td class="num">${r.n_within_2}</td><td class="num">${(r.n * r.base_within_2).toFixed(1)}</td><td class="num">${pc(r.obs_within_5)}</td><td class="num">${pc(r.base_within_5)}</td><td class="num">${pv < .001 ? "&lt;0.1%" : pc(pv, 1)}</td>`;
+    if (!TL[k]) tr.style.fontWeight = "500"; tt.appendChild(tr); });
+})();
+</script>
+</body>
+</html>
